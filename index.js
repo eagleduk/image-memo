@@ -4,6 +4,7 @@ class ImageMemo {
   #memos = [];
   #ids = [];
   #focus = null;
+  #numbering = 1;
 
   constructor(rootId, opt = {}) {
     this.#rootId = rootId;
@@ -21,20 +22,33 @@ class ImageMemo {
     window.removeEventListener("click", this.#onResetFocus);
   }
 
+  #boardControl(active) {
+    const board = document.getElementById(this.#rootId + "_board");
+    if(active) {
+      board.querySelectorAll("button, textarea").forEach(el => el.disabled = false);
+    } else {
+      board.querySelectorAll("button, textarea").forEach(el => {
+        el.disabled = true;
+        if(el.nodeName === "TEXTAREA") {
+          el.value = "";
+        }
+      });
+    }
+  }
+
   #onResetFocus = (e) => {
     const element = e.target;
+    const nodeName = element.nodeName;
 
-    if (
-      element.nodeName === "ARTICLE" ||
-      (element.nodeName === "INPUT" && element.type === "color")
-    ) {
-      return;
+    if(nodeName === "IMG" || nodeName === "DIV") {
+      this.#memos.forEach((memo) => {
+        memo.classList.remove("focus");
+      });
+      this.#focus = null;
+      
+      this.#boardControl(false);
     }
 
-    this.#memos.forEach((memo) => {
-      memo.classList.remove("focus");
-    });
-    this.#focus = null;
   };
 
   #render() {
@@ -118,7 +132,7 @@ class ImageMemo {
     const memo = document.createElement("article");
     memo.draggable = true;
     memo.id = uuidStr;
-    memo.className = "memo";
+    memo.className = "numbering";
     memo.dataset.anchor = "--" + this.#rootId + "-image";
     memo.addEventListener("dragstart", (e) => {
       const {
@@ -160,9 +174,12 @@ class ImageMemo {
 
       e.target.classList.add("focus");
       this.#focus = e.target.id;
+
+      this.#boardControl(true);
+
     });
-    memo.textContent = text;
-    memo.contentEditable = true;
+    memo.textContent = this.#numbering++;
+    // memo.contentEditable = true;
 
     this.#memos.push(memo);
     this.#ids.push(uuidStr);
@@ -182,7 +199,48 @@ class ImageMemo {
     image.id = this.#rootId + "_image";
 
     canvas.appendChild(image);
+
+    const titleSpan = document.createElement("span");
+    titleSpan.textContent = "";
+
+    const memoSave = document.createElement("button");
+    memoSave.textContent = "save";
+    memoSave.className = "memo_action_button";
+    memoSave.disabled = true;
+    
+    const memoDel = document.createElement("button");
+    memoDel.textContent = "delete";
+    memoDel.className = "memo_action_button";
+    memoDel.disabled = true;
+
+    const actionArea = document.createElement("p");
+    actionArea.appendChild(memoSave);
+    actionArea.appendChild(memoDel);
+
+    const boardControl = document.createElement("div");
+    // boardControl.textContent = "control-bar";
+    boardControl.className = "board_control_bar";
+
+    boardControl.appendChild(titleSpan);
+    boardControl.appendChild(actionArea);
+
+    const boardTextArea = document.createElement("div");
+
+    const textarea = document.createElement("textarea");
+    textarea.placeholder = "type memo text here...";
+    textarea.className = "memo_action_text";
+    textarea.disabled = true;
+
+    const board = document.createElement("div");
+    board.className = "board_wrapper unactive";
+    board.id = this.#rootId + "_board";
+
+    boardTextArea.appendChild(textarea);
+    board.appendChild(boardControl);
+    board.appendChild(boardTextArea);
+
     content.appendChild(canvas);
+    content.appendChild(board);
 
     return content;
   }
