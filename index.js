@@ -120,10 +120,24 @@ class ImageMemo {
     const downloadBtnEl = document.createElement("button");
     downloadBtnEl.textContent = "DownLoad";
     downloadBtnEl.addEventListener("click", () => {
-      var link = document.createElement("a");
-      link.download = "filename.png";
-      link.href = document.getElementById(this.#rootId + "_canvas").toDataURL();
-      link.click();
+      // var link = document.createElement("a");
+      // link.download = "filename.png";
+      // link.href = document.getElementById(this.#rootId + "_canvas").toDataURL();
+      // link.click();
+
+      const canvas = document.getElementById(this.#rootId + "_canvas");
+      canvas.toBlob(
+        (b) => {
+          const blobUrl = URL.createObjectURL(b);
+
+          const newImage = document.createElement("img");
+          newImage.src = blobUrl;
+
+          document.querySelector("body").appendChild(newImage);
+        },
+        "image/png",
+        1
+      );
     });
 
     toolbar.appendChild(fileEl);
