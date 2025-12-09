@@ -55,6 +55,7 @@ class ImageMemo {
     fileEl.type = "file";
     fileEl.addEventListener("change", (e) => {
       const imgEl = document.getElementById(this.#rootId + "_image");
+      imgEl.style.display = "inline";
       const uploadFile = e.target.files;
       if (!uploadFile || uploadFile?.length === 0) {
         imgEl.src = "";
@@ -104,9 +105,22 @@ class ImageMemo {
       canvasEl.appendChild(memo);
     });
 
+    const rectBtnEl = document.createElement("button");
+    rectBtnEl.textContent = "Rect";
+    rectBtnEl.addEventListener("click", () => {
+      const canvas = document.getElementById(this.#rootId + "_canvas");
+      const ctx = canvas.getContext("2d");
+      ctx.strokeStyle = "red"; // Set the stroke color
+      ctx.lineWidth = 2; // Set the stroke width
+      ctx.draggable = true;
+      ctx.id = "TEST";
+      ctx.strokeRect(2, 2, 30, 30); // x, y, width, height
+    });
+
     toolbar.appendChild(fileEl);
     toolbar.appendChild(saveEl);
     toolbar.appendChild(addBtnEl);
+    toolbar.appendChild(rectBtnEl);
 
     return toolbar;
   }
@@ -173,16 +187,30 @@ class ImageMemo {
     const content = document.createElement("div");
     content.className = "memo_content";
 
-    const canvas = document.createElement("div");
+    const canvas = document.createElement("canvas");
     canvas.className = "image_wrapper";
     canvas.id = this.#rootId + "_canvas";
+    // canvas.style.anchorName = "--" + this.#rootId + "-image";
 
     const image = document.createElement("img");
-    image.style.anchorName = "--" + this.#rootId + "-image";
+    // image.style.anchorName = "--" + this.#rootId + "-image";
     image.id = this.#rootId + "_image";
+    image.addEventListener("load", (e) => {
+      console.dir(image);
+      const canvas = document.getElementById(this.#rootId + "_canvas");
+      canvas.setAttribute("width", image.clientWidth);
+      canvas.setAttribute("height", image.clientHeight);
+      const ctx = canvas.getContext("2d");
 
-    canvas.appendChild(image);
+      ctx.drawImage(image, 0, 0, image.clientWidth, image.clientHeight);
+
+      image.style.display = "none";
+    });
+
+    // canvas.appendChild(image);
+
     content.appendChild(canvas);
+    content.appendChild(image);
 
     return content;
   }
