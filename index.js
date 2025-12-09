@@ -117,10 +117,20 @@ class ImageMemo {
       ctx.strokeRect(2, 2, 30, 30); // x, y, width, height
     });
 
+    const downloadBtnEl = document.createElement("button");
+    downloadBtnEl.textContent = "DownLoad";
+    downloadBtnEl.addEventListener("click", () => {
+      var link = document.createElement("a");
+      link.download = "filename.png";
+      link.href = document.getElementById(this.#rootId + "_canvas").toDataURL();
+      link.click();
+    });
+
     toolbar.appendChild(fileEl);
     toolbar.appendChild(saveEl);
     toolbar.appendChild(addBtnEl);
     toolbar.appendChild(rectBtnEl);
+    toolbar.appendChild(downloadBtnEl);
 
     return toolbar;
   }
