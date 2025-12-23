@@ -1,9 +1,55 @@
+const _DEFAULTSTATE = null;
+const _TEXTSTATE = 0;
+const _LINESTATE = 1;
+
+function getMousePosition(e) {
+  console.log(e, e.srcElement);
+  const rect = e.srcElement.getBoundingClientRect();
+  return {
+    x: e.pageX - rect.left,
+    y: e.pageY - rect.top,
+  };
+}
+
+function updateSvgPath(e) {
+  const rect = e.srcElement.getBoundingClientRect();
+
+  const target = document.getElementById("TEST");
+  const a = target.getAttribute("d");
+  const strPath = a + " L" + (e.pageX - rect.left) + " " + (e.pageY - rect.top);
+  // Get the smoothed part of the path that will not change
+
+  target.setAttribute("d", strPath);
+
+  // strPath += " L" + pt.x + " " + pt.y;
+
+  // // Get the last part of the path (close to the current mouse position)
+  // // This part will change if the mouse moves again
+  // var tmpPath = "";
+  // for (var offset = 2; offset < buffer.length; offset += 2) {
+  //   pt = getAveragePoint(offset);
+  //   tmpPath += " L" + pt.x + " " + pt.y;
+  // }
+
+  // // Set the complete current path coordinates
+  // path.setAttribute("d", strPath + tmpPath);
+}
+
+// const buffer = [];
+// function appendToBuffer(pt) {
+//   buffer.push(pt);
+//   while (buffer.length > bufferSize) {
+//     buffer.shift();
+//   }
+// }
+
 class ImageMemo {
   #rootId;
   #options;
   #memos = [];
   #ids = [];
   #focus = null;
+  #state = _DEFAULTSTATE;
 
   constructor(rootId, opt = {}) {
     this.#rootId = rootId;
@@ -34,6 +80,7 @@ class ImageMemo {
     this.#memos.forEach((memo) => {
       memo.classList.remove("focus");
     });
+
     this.#focus = null;
   };
 
@@ -97,21 +144,30 @@ class ImageMemo {
     });
 
     const addBtnEl = document.createElement("button");
-    addBtnEl.textContent = "ADD";
+    addBtnEl.textContent = "[ T ]";
     addBtnEl.addEventListener("click", (e) => {
-      const memo = this.#createMemo();
-      const canvasEl = document.getElementById(this.#rootId + "_canvas");
-      canvasEl.appendChild(memo);
+      this.#state = _TEXTSTATE;
+
+      // const memo = this.#createMemo();
+      // const canvasEl = document.getElementById(this.#rootId + "_canvas");
+      // canvasEl.appendChild(memo);
+    });
+
+    const addLineBtnEl = document.createElement("button");
+    addLineBtnEl.textContent = "[ L ]";
+    addLineBtnEl.addEventListener("click", (e) => {
+      this.#state = _LINESTATE;
     });
 
     toolbar.appendChild(fileEl);
     toolbar.appendChild(saveEl);
     toolbar.appendChild(addBtnEl);
+    toolbar.appendChild(addLineBtnEl);
 
     return toolbar;
   }
 
-  #createMemo(text) {
+  #createMemo(text = "", { x = 0, y = 0 }) {
     const uuidStr = window.crypto
       .getRandomValues(new Uint32Array(1))[0]
       .toString(36);
@@ -120,6 +176,9 @@ class ImageMemo {
     memo.id = uuidStr;
     memo.className = "memo";
     memo.dataset.anchor = "--" + this.#rootId + "-image";
+    memo.style.top = y + "px";
+    memo.style.left = x + "px";
+
     memo.addEventListener("dragstart", (e) => {
       const {
         layerX,
@@ -180,6 +239,46 @@ class ImageMemo {
     const image = document.createElement("img");
     image.style.anchorName = "--" + this.#rootId + "-image";
     image.id = this.#rootId + "_image";
+    image.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      this.#state = _DEFAULTSTATE;
+    });
+
+    image.addEventListener("click", (e) => {
+      console.log(e);
+
+      if (this.#state === _TEXTSTATE) {
+        const memo = this.#createMemo("", { x: 100, y: 100 });
+        const canvasEl = document.getElementById(this.#rootId + "_canvas");
+        canvasEl.appendChild(memo);
+
+        this.#state === _DEFAULTSTATE;
+      } else if (this.#state === _LINESTATE) {
+        const path = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path"
+        );
+        path.setAttribute("id", "TEST");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "red");
+        path.setAttribute("stroke-width", 10);
+        var pt = getMousePosition(e);
+        // appendToBuffer(pt);
+        const strPath = "M" + pt.x + " " + pt.y;
+        path.setAttribute("d", strPath);
+
+        const canvasEl = document.getElementById(this.#rootId + "_canvas");
+        canvasEl.appendChild(path);
+      }
+    });
+
+    image.addEventListener("mousemove", (e) => {
+      if (this.#state === _LINESTATE) {
+        // appendToBuffer();
+        getMousePosition(e);
+        updateSvgPath(e);
+      }
+    });
 
     canvas.appendChild(image);
     content.appendChild(canvas);
