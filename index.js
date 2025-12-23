@@ -1,9 +1,9 @@
 const _DEFAULTSTATE = null;
 const _TEXTSTATE = 0;
 const _LINESTATE = 1;
+const _DRAWINGSTATE = 2;
 
 function getMousePosition(e) {
-  console.log(e, e.srcElement);
   const rect = e.srcElement.getBoundingClientRect();
   return {
     x: e.pageX - rect.left,
@@ -239,14 +239,13 @@ class ImageMemo {
     const image = document.createElement("img");
     image.style.anchorName = "--" + this.#rootId + "-image";
     image.id = this.#rootId + "_image";
+
     image.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       this.#state = _DEFAULTSTATE;
     });
 
     image.addEventListener("click", (e) => {
-      console.log(e);
-
       if (this.#state === _TEXTSTATE) {
         const memo = this.#createMemo("", { x: 100, y: 100 });
         const canvasEl = document.getElementById(this.#rootId + "_canvas");
@@ -269,11 +268,13 @@ class ImageMemo {
 
         const canvasEl = document.getElementById(this.#rootId + "_canvas");
         canvasEl.appendChild(path);
+
+        this.#state = _DRAWINGSTATE;
       }
     });
 
     image.addEventListener("mousemove", (e) => {
-      if (this.#state === _LINESTATE) {
+      if (this.#state === _DRAWINGSTATE) {
         // appendToBuffer();
         getMousePosition(e);
         updateSvgPath(e);
