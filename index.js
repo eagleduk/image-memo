@@ -11,10 +11,10 @@ function getMousePosition(e) {
   };
 }
 
-function updateSvgPath(e) {
+function updateSvgPath(e, focus) {
   const rect = e.srcElement.getBoundingClientRect();
 
-  const target = document.getElementById("TEST");
+  const target = document.getElementById(focus);
 
   const {x,y} = target.dataset;
 
@@ -72,6 +72,13 @@ class ImageMemo {
 
   #onResetFocus = (e) => {
     const element = e.target;
+
+    if(this.#state === _TEXTSTATE) {
+      this.#state=== _DEFAULTSTATE;
+      return;
+    }
+
+    if(this.#state !== _DEFAULTSTATE) return;
 
     if (
       element.nodeName === "ARTICLE" ||
@@ -192,6 +199,7 @@ class ImageMemo {
       // e.currentTarget.classList.add(styles.drag_start);
       e.currentTarget.setAttribute("layerX", String(layerX));
       e.currentTarget.setAttribute("layerY", String(layerY));
+      e.currentTarget.style.setProperty("transform", "translate(0, 0)");
     });
     memo.addEventListener("dragend", (e) => {
       const { clientX, clientY } = e;
@@ -264,7 +272,9 @@ class ImageMemo {
 
     svg.addEventListener("click", (e) => {
       if (this.#state === _TEXTSTATE) {
-        const memo = this.#createMemo("", { x: 100, y: 100 });
+        
+  const rect = e.srcElement.getBoundingClientRect();
+        const memo = this.#createMemo("", { x: (e.pageX - rect.left), y: (e.pageY - rect.top) });
         const canvasEl = document.getElementById(this.#rootId + "_canvas");
         canvasEl.appendChild(memo);
 
@@ -274,10 +284,13 @@ class ImageMemo {
            "http://www.w3.org/2000/svg",
           "path"
         );
-        path.setAttribute("id", "TEST");
+        const uuidStr = window.crypto
+          .getRandomValues(new Uint32Array(1))[0]
+          .toString(36);
+        path.setAttribute("id", this.#rootId + "_path_" + uuidStr);
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", "red");
-        path.setAttribute("stroke-width", 10);
+        path.setAttribute("stroke-width", 3);
         var pt = getMousePosition(e);
 
         path.dataset.x = pt.x
@@ -291,14 +304,59 @@ class ImageMemo {
         canvasEl.appendChild(path);
 
         this.#state = _DRAWINGSTATE;
+        this.#focus = this.#rootId + "_path_" + uuidStr;
+
+        console.log(this.#focus, this.#rootId + "_path_" + uuidStr)
+
+      } else if(this.#state === _DRAWINGSTATE) {
+        const focus = this.#focus;
+
+        const endPath = document.getElementById(focus);
+        
+        const rect = e.srcElement.getBoundingClientRect();
+        // { x: (e.pageX - rect.left), y: (e.pageY - rect.top) }
+
+        const {x,y} = endPath.dataset;
+        
+        const a = "M" + x + " " + y;
+        const strPath = a + " L" + (e.pageX - rect.left) + " " + (e.pageY - rect.top);
+        
+        endPath.setAttribute("d", strPath);
+        
+        const path = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+         "path"
+       );
+        const uuidStr = window.crypto
+          .getRandomValues(new Uint32Array(1))[0]
+          .toString(36);
+        path.setAttribute("id", this.#rootId + "_path_" + uuidStr);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "red");
+        path.setAttribute("stroke-width", 3);
+        var pt = getMousePosition(e);
+
+        path.dataset.x = pt.x
+        path.dataset.y = pt.y;
+
+        // appendToBuffer(pt);
+        // path.setAttribute("d", strPath);
+
+        const canvasEl = document.getElementById(this.#rootId + "_paint");
+        canvasEl.appendChild(path);
+
+        this.#state = _DRAWINGSTATE;
+        this.#focus = this.#rootId + "_path_" + uuidStr;
       }
     });
 
     svg.addEventListener("mousemove", (e) => {
       if (this.#state === _DRAWINGSTATE) {
+        const focus = this.#focus;
+        console.log("mousemove", focus);
         // appendToBuffer();
         getMousePosition(e);
-        updateSvgPath(e);
+        updateSvgPath(e, focus);
       }
     });
 

@@ -45,6 +45,7 @@ input[type=file] {
     min-width: 100px;
     min-height: 25px;
     border: 4px solid blue;
+  transform: translate(-50%, -50%);
   }
   
   .memo:active {
