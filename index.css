@@ -65,3 +65,10 @@ input[type=file] {
     outline: none;
   }
   
+  .image_paint {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: anchor-size(attr(target-anchor));
+    height: anchor-size(attr(target-anchor));
+  }

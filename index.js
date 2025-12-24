@@ -15,7 +15,10 @@ function updateSvgPath(e) {
   const rect = e.srcElement.getBoundingClientRect();
 
   const target = document.getElementById("TEST");
-  const a = target.getAttribute("d");
+
+  const {x,y} = target.dataset;
+
+  const a = "M" + x + " " + y;
   const strPath = a + " L" + (e.pageX - rect.left) + " " + (e.pageY - rect.top);
   // Get the smoothed part of the path that will not change
 
@@ -236,16 +239,30 @@ class ImageMemo {
     canvas.className = "image_wrapper";
     canvas.id = this.#rootId + "_canvas";
 
+    const svg = document.createElementNS(
+           "http://www.w3.org/2000/svg","svg");
+    svg.id = this.#rootId + "_paint";
+    svg.setAttribute("class", "image_paint");
+    svg.setAttribute("target-anchor", "--" + this.#rootId + "-image")
+
     const image = document.createElement("img");
     image.style.anchorName = "--" + this.#rootId + "-image";
     image.id = this.#rootId + "_image";
+    image.addEventListener("load", (e) => {
 
-    image.addEventListener("contextmenu", (e) => {
+      const paint = document.getElementById(this.#rootId + "_paint");
+      paint.setAttribute("width", image.clientWidth);
+      paint.setAttribute("height", image.clientHeight);
+
+
+    });
+
+    svg.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       this.#state = _DEFAULTSTATE;
     });
 
-    image.addEventListener("click", (e) => {
+    svg.addEventListener("click", (e) => {
       if (this.#state === _TEXTSTATE) {
         const memo = this.#createMemo("", { x: 100, y: 100 });
         const canvasEl = document.getElementById(this.#rootId + "_canvas");
@@ -254,7 +271,7 @@ class ImageMemo {
         this.#state === _DEFAULTSTATE;
       } else if (this.#state === _LINESTATE) {
         const path = document.createElementNS(
-          "http://www.w3.org/2000/svg",
+           "http://www.w3.org/2000/svg",
           "path"
         );
         path.setAttribute("id", "TEST");
@@ -262,18 +279,22 @@ class ImageMemo {
         path.setAttribute("stroke", "red");
         path.setAttribute("stroke-width", 10);
         var pt = getMousePosition(e);
+
+        path.dataset.x = pt.x
+        path.dataset.y = pt.y;
+
         // appendToBuffer(pt);
         const strPath = "M" + pt.x + " " + pt.y;
-        path.setAttribute("d", strPath);
+        // path.setAttribute("d", strPath);
 
-        const canvasEl = document.getElementById(this.#rootId + "_canvas");
+        const canvasEl = document.getElementById(this.#rootId + "_paint");
         canvasEl.appendChild(path);
 
         this.#state = _DRAWINGSTATE;
       }
     });
 
-    image.addEventListener("mousemove", (e) => {
+    svg.addEventListener("mousemove", (e) => {
       if (this.#state === _DRAWINGSTATE) {
         // appendToBuffer();
         getMousePosition(e);
@@ -281,7 +302,9 @@ class ImageMemo {
       }
     });
 
+    canvas.appendChild(svg);
     canvas.appendChild(image);
+
     content.appendChild(canvas);
 
     return content;
