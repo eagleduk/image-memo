@@ -67,6 +67,7 @@ class ImageMemoProxy {
   _state = _DEFAULTSTATE;
   _data = null;
 
+  //Ques?? 이걸 그냥 class 에 넣으면 어떰?
   constructor() {
     return new Proxy(this, {
       set: (object, key, value, proxy) => {
@@ -75,7 +76,9 @@ class ImageMemoProxy {
           console.log("값 변경");
           object[key] = value;
 
-          if (key === "_focus") this.changeFocus();
+          if (key === "_state") {
+            this.changeState();
+          }
         }
         return true;
       },
@@ -112,7 +115,9 @@ class ImageMemo extends ImageMemoProxy {
 
     this.#render();
   }
-
+  changeState() {
+    console.log("changeState");
+  }
   #render() {
     console.log("render", this._rootId);
     const root = document.getElementById(this._rootId);
