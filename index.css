@@ -43,13 +43,13 @@ input[type="file"] {
   padding: 15px;
   position-anchor: "--" + attr(data-anchor) + "-canvas";
   min-width: 100px;
-  min-height: 25px;
+  min-height: 30px;
   border: 4px solid blue;
-  transform: translate(-50%, -50%);
+  /* transform: translate(-50%, -50%); */
   cursor: all-scroll;
 
   & > div {
-    cursor: default;
+    cursor: text;
     outline: none;
   }
 }

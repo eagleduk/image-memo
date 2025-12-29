@@ -1,37 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <link rel="stylesheet" href="./index.css">
-</head>
+    <link rel="stylesheet" href="./index.css" />
+  </head>
 
-<body style="width: 100vw; height: 100vh;">
+  <body style="width: 100vw; height: 100vh">
     <script src="./index.js"></script>
     <script src="./dummy.js"></script>
 
     <div id="root" class="content">
-        <!-- <svg id="mst" width="680" height="550" version="1.1" xmlns="http://www.w3.org/2000/svg">
+      <!-- <svg id="mst" width="680" height="550" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <path style="stroke:blue; stroke-width: 3px;" d="M340 60 40 160" class="p1766555830963" data-nodes="B,A" data-value="7" id="fromB_toA_path"></path>
         </svg> -->
     </div>
 
     <script>
-        const memo = new ImageMemo("root");
+      const memo = new ImageMemo("root");
 
-        memo.setData({
-            MEMOS, PATHS
-        })
+      console.log("memo", memo);
+      memo.setInfo("root");
+      //   memo.render();
 
-        memo.changeState();
+      //   memo.setData({
+      //     MEMOS,
+      //     PATHS,
+      //   });
 
-        // memo.add({
-        //     MEMOS,
-        //     PATHS
-        // })
+      // memo.add({
+      //     MEMOS,
+      //     PATHS
+      // })
     </script>
-</body>
-
+  </body>
 </html>
