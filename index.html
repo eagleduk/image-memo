@@ -10,6 +10,7 @@
 
 <body style="width: 100vw; height: 100vh;">
     <script src="./index.js"></script>
+    <script src="./dummy.js"></script>
 
     <div id="root" class="content">
         <!-- <svg id="mst" width="680" height="550" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -19,6 +20,13 @@
 
     <script>
         const memo = new ImageMemo("root");
+        memo.setData({
+            MEMOS, PATHS
+        })
+        // memo.add({
+        //     MEMOS,
+        //     PATHS
+        // })
     </script>
 </body>
 

@@ -3,26 +3,36 @@ const _TEXTSTATE = 0;
 const _LINESTATE = 1;
 const _DRAWINGSTATE = 2;
 
-function getMousePosition(e) {
-  const rect = e.srcElement.getBoundingClientRect();
+function getMousePosition(e, id) {
+  const paint = document.getElementById(id);
+  const rect = paint.getBoundingClientRect();
   return {
     x: e.pageX - rect.left,
     y: e.pageY - rect.top,
   };
 }
 
-function updateSvgPath(e, focus) {
-  const rect = e.srcElement.getBoundingClientRect();
+function updateSvgPath(e, id, focus) {
+  const paint = document.getElementById(id);
+  const rect = paint.getBoundingClientRect();
 
   const target = document.getElementById(focus);
 
-  const {x,y} = target.dataset;
+  const { startX, startY } = target.dataset;
 
-  const a = "M" + x + " " + y;
+  const a = "M" + startX + " " + startY;
   const strPath = a + " L" + (e.pageX - rect.left) + " " + (e.pageY - rect.top);
   // Get the smoothed part of the path that will not change
 
+  target.dataset.endX = e.pageX - rect.left;
+  target.dataset.endY = e.pageY - rect.top;
+
   target.setAttribute("d", strPath);
+
+  return {
+    x: e.pageX - rect.left,
+    y: e.pageY - rect.top,
+  };
 
   // strPath += " L" + pt.x + " " + pt.y;
 
@@ -50,9 +60,11 @@ class ImageMemo {
   #rootId;
   #options;
   #memos = [];
+  #paths = [];
   #ids = [];
   #focus = null;
   #state = _DEFAULTSTATE;
+  #data = null;
 
   constructor(rootId, opt = {}) {
     this.#rootId = rootId;
@@ -66,6 +78,51 @@ class ImageMemo {
     window.addEventListener("click", this.#onResetFocus);
   }
 
+  setData(data) {
+    this.#data = data;
+  }
+
+  add(data) {
+    const { MEMOS: memos, PATHS: paths } = data;
+    console.log(memos, paths);
+
+    memos.forEach((m) => {
+      const memo = this.#createMemo(m.innerHTML, {
+        x: m.left,
+        y: m.top,
+      });
+      const canvasEl = document.getElementById(this.#rootId + "_canvas");
+      canvasEl.appendChild(memo);
+    });
+
+    paths.forEach((p) => {
+      const { id, fill, stroke, strokeWidth, startX, startY, endX, endY, d } =
+        p;
+
+      const path = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path"
+      );
+      const uuidStr = window.crypto
+        .getRandomValues(new Uint32Array(1))[0]
+        .toString(36);
+      path.setAttribute("id", id);
+      path.setAttribute("fill", fill);
+      path.setAttribute("stroke", stroke);
+      path.setAttribute("stroke-width", strokeWidth);
+      path.setAttribute("stroke-linejoin", "round");
+      path.setAttribute("d", d);
+
+      path.dataset.startX = startX;
+      path.dataset.startY = startY;
+      path.dataset.endX = endX;
+      path.dataset.endY = endY;
+
+      const canvasEl = document.getElementById(this.#rootId + "_paint");
+      canvasEl.appendChild(path);
+    });
+  }
+
   destroy() {
     window.removeEventListener("click", this.#onResetFocus);
   }
@@ -73,12 +130,12 @@ class ImageMemo {
   #onResetFocus = (e) => {
     const element = e.target;
 
-    if(this.#state === _TEXTSTATE) {
-      this.#state=== _DEFAULTSTATE;
+    if (this.#state === _TEXTSTATE) {
+      this.#state === _DEFAULTSTATE;
       return;
     }
 
-    if(this.#state !== _DEFAULTSTATE) return;
+    if (this.#state !== _DEFAULTSTATE) return;
 
     if (
       element.nodeName === "ARTICLE" ||
@@ -128,29 +185,51 @@ class ImageMemo {
     const saveEl = document.createElement("button");
     saveEl.textContent = "SAVE";
     saveEl.addEventListener("click", (e) => {
-      this.#memos.forEach((memo) => {
+      const memos = this.#memos.map((memo) => {
         const {
-          textContent,
+          innerHTML,
           style: { top, left, backgroundColor, color },
+          offsetLeft,
+          offsetTop,
           id,
         } = memo;
-
-        console.log(
-          "id" +
-            id +
-            ", " +
-            "textContent " +
-            textContent +
-            ", top: " +
-            top +
-            ", left: " +
-            left +
-            ", backg: " +
-            backgroundColor +
-            ", color: " +
-            color
-        );
+        return {
+          innerHTML,
+          offsetLeft,
+          offsetTop,
+          backgroundColor,
+          color,
+          id,
+        };
       });
+
+      const lines = this.#paths.map((path) => {
+        const {
+          attributes: {
+            id: { value: id },
+            fill: { value: fill },
+            stroke: { value: stroke },
+            "stroke-width": { value: strokeWidth },
+            d: { value: d },
+          },
+          dataset: { startX, startY, endX, endY },
+        } = path;
+
+        return {
+          id,
+          fill,
+          stroke,
+          strokeWidth,
+          startX,
+          startY,
+          endX,
+          endY,
+          d,
+        };
+      });
+
+      console.log("memos :: ", memos);
+      console.log("lines :: ", lines);
     });
 
     const addBtnEl = document.createElement("button");
@@ -181,9 +260,12 @@ class ImageMemo {
     const uuidStr = window.crypto
       .getRandomValues(new Uint32Array(1))[0]
       .toString(36);
+
+    const memoId = this.#rootId + "_memo_" + uuidStr;
+
     const memo = document.createElement("article");
     memo.draggable = true;
-    memo.id = uuidStr;
+    memo.id = memoId;
     memo.className = "memo";
     memo.dataset.anchor = "--" + this.#rootId + "-image";
     memo.style.top = y + "px";
@@ -228,14 +310,17 @@ class ImageMemo {
     memo.addEventListener("click", (e) => {
       this.#memos.forEach((memo) => memo.classList.remove("focus"));
 
-      e.target.classList.add("focus");
-      this.#focus = e.target.id;
+      memo.classList.add("focus");
+      this.#focus = memo.id;
     });
-    memo.textContent = text;
-    memo.contentEditable = true;
+    const textArea = document.createElement("div");
+    textArea.contentEditable = true;
+    textArea.innerHTML = text;
+    memo.appendChild(textArea);
+    // memo.contentEditable = true;
 
     this.#memos.push(memo);
-    this.#ids.push(uuidStr);
+    this.#ids.push(memoId);
     return memo;
   }
 
@@ -247,41 +332,46 @@ class ImageMemo {
     canvas.className = "image_wrapper";
     canvas.id = this.#rootId + "_canvas";
 
-    const svg = document.createElementNS(
-           "http://www.w3.org/2000/svg","svg");
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.id = this.#rootId + "_paint";
     svg.setAttribute("class", "image_paint");
-    svg.setAttribute("target-anchor", "--" + this.#rootId + "-image")
+    svg.setAttribute("target-anchor", "--" + this.#rootId + "-image");
 
     const image = document.createElement("img");
     image.style.anchorName = "--" + this.#rootId + "-image";
     image.id = this.#rootId + "_image";
     image.addEventListener("load", (e) => {
-
       const paint = document.getElementById(this.#rootId + "_paint");
       paint.setAttribute("width", image.clientWidth);
       paint.setAttribute("height", image.clientHeight);
 
-
+      this.add(this.#data);
     });
 
     svg.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      this.#state = _DEFAULTSTATE;
+      if (this.#state === _DRAWINGSTATE) {
+        this.#state = _DEFAULTSTATE;
+        document.getElementById(this.#focus).remove();
+        this.#paths.pop();
+      }
     });
 
     svg.addEventListener("click", (e) => {
       if (this.#state === _TEXTSTATE) {
-        
-  const rect = e.srcElement.getBoundingClientRect();
-        const memo = this.#createMemo("", { x: (e.pageX - rect.left), y: (e.pageY - rect.top) });
+        const paint = document.getElementById(this.#rootId + "_paint");
+        const rect = paint.getBoundingClientRect();
+        const memo = this.#createMemo("", {
+          x: e.pageX - rect.left,
+          y: e.pageY - rect.top,
+        });
         const canvasEl = document.getElementById(this.#rootId + "_canvas");
         canvasEl.appendChild(memo);
 
-        this.#state === _DEFAULTSTATE;
+        this.#state = _DEFAULTSTATE;
       } else if (this.#state === _LINESTATE) {
         const path = document.createElementNS(
-           "http://www.w3.org/2000/svg",
+          "http://www.w3.org/2000/svg",
           "path"
         );
         const uuidStr = window.crypto
@@ -291,10 +381,11 @@ class ImageMemo {
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", "red");
         path.setAttribute("stroke-width", 3);
-        var pt = getMousePosition(e);
+        path.setAttribute("stroke-linejoin", "round");
+        var pt = getMousePosition(e, this.#rootId + "_paint");
 
-        path.dataset.x = pt.x
-        path.dataset.y = pt.y;
+        path.dataset.startX = pt.x;
+        path.dataset.startY = pt.y;
 
         // appendToBuffer(pt);
         const strPath = "M" + pt.x + " " + pt.y;
@@ -305,28 +396,18 @@ class ImageMemo {
 
         this.#state = _DRAWINGSTATE;
         this.#focus = this.#rootId + "_path_" + uuidStr;
-
-        console.log(this.#focus, this.#rootId + "_path_" + uuidStr)
-
-      } else if(this.#state === _DRAWINGSTATE) {
+        this.#paths.push(path);
+      } else if (this.#state === _DRAWINGSTATE) {
         const focus = this.#focus;
 
-        const endPath = document.getElementById(focus);
-        
-        const rect = e.srcElement.getBoundingClientRect();
-        // { x: (e.pageX - rect.left), y: (e.pageY - rect.top) }
+        // const endPath = document.getElementById(focus);
 
-        const {x,y} = endPath.dataset;
-        
-        const a = "M" + x + " " + y;
-        const strPath = a + " L" + (e.pageX - rect.left) + " " + (e.pageY - rect.top);
-        
-        endPath.setAttribute("d", strPath);
-        
+        const { x, y } = updateSvgPath(e, this.#rootId + "_paint", focus);
+
         const path = document.createElementNS(
           "http://www.w3.org/2000/svg",
-         "path"
-       );
+          "path"
+        );
         const uuidStr = window.crypto
           .getRandomValues(new Uint32Array(1))[0]
           .toString(36);
@@ -334,10 +415,11 @@ class ImageMemo {
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", "red");
         path.setAttribute("stroke-width", 3);
-        var pt = getMousePosition(e);
+        path.setAttribute("stroke-linejoin", "round");
+        var pt = getMousePosition(e, this.#rootId + "_paint");
 
-        path.dataset.x = pt.x
-        path.dataset.y = pt.y;
+        path.dataset.startX = pt.x;
+        path.dataset.startY = pt.y;
 
         // appendToBuffer(pt);
         // path.setAttribute("d", strPath);
@@ -347,16 +429,16 @@ class ImageMemo {
 
         this.#state = _DRAWINGSTATE;
         this.#focus = this.#rootId + "_path_" + uuidStr;
+        this.#paths.push(path);
       }
     });
 
     svg.addEventListener("mousemove", (e) => {
       if (this.#state === _DRAWINGSTATE) {
         const focus = this.#focus;
-        console.log("mousemove", focus);
         // appendToBuffer();
-        getMousePosition(e);
-        updateSvgPath(e, focus);
+        // getMousePosition(e, this.#rootId + "_paint");
+        const { x, y } = updateSvgPath(e, this.#rootId + "_paint", focus);
       }
     });
 
