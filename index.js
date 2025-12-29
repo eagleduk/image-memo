@@ -57,6 +57,22 @@ function updateSvgPath(e, id, focus) {
 // }
 
 class ImageMemo {
+  #rootId = new Proxy(
+    {
+      value: null,
+    },
+    {
+      set(target, props, value) {
+        if (props === "value") {
+          target.value = value;
+        }
+        return true;
+      },
+      get(target, prop, receiver) {
+        return target.value;
+      },
+    }
+  );
   #rootId;
   #options;
   #memos = [];
@@ -67,6 +83,7 @@ class ImageMemo {
   #data = null;
 
   constructor(rootId, opt = {}) {
+    console.log(this.#rootId, " ==== ", rootId);
     this.#rootId = rootId;
     this.#options = opt;
     this.#memos = [];
@@ -76,15 +93,42 @@ class ImageMemo {
     this.#render();
 
     window.addEventListener("click", this.#onResetFocus);
+
+    // this.addEventListener("dataChange", (event) => {
+    //   console.log(
+    //     `Property "${event.detail.property}" changed from ${event.detail.oldValue} to ${event.detail.newValue}`
+    //   );
+    // });
   }
 
+  // set #rootId(a) {
+  //   this.#rootId = a;
+  // }
+
+  // get #rootId() {
+  //   return "root";
+  // }
+
+  #reset() {
+    const root = document.getElementById(this.#rootId);
+
+    root.querySelectorAll("article").forEach((e) => e.remove());
+
+    root.querySelectorAll("path").forEach((e) => e.remove());
+
+    this.#data = null;
+  }
+
+  /**
+   * 임시 dummy 데이터 저장 위한 함수.
+   * @param {} data
+   */
   setData(data) {
     this.#data = data;
   }
 
   add(data) {
     const { MEMOS: memos, PATHS: paths } = data;
-    console.log(memos, paths);
 
     memos.forEach((m) => {
       const memo = this.#createMemo(m.innerHTML, {
@@ -227,9 +271,6 @@ class ImageMemo {
           d,
         };
       });
-
-      console.log("memos :: ", memos);
-      console.log("lines :: ", lines);
     });
 
     const addBtnEl = document.createElement("button");
@@ -252,6 +293,14 @@ class ImageMemo {
     toolbar.appendChild(saveEl);
     toolbar.appendChild(addBtnEl);
     toolbar.appendChild(addLineBtnEl);
+
+    const resetBtnEl = document.createElement("button");
+    resetBtnEl.textContent = "Reset";
+    resetBtnEl.addEventListener("click", (e) => {
+      this.#reset();
+    });
+
+    toolbar.appendChild(resetBtnEl);
 
     return toolbar;
   }
@@ -365,7 +414,9 @@ class ImageMemo {
           x: e.pageX - rect.left,
           y: e.pageY - rect.top,
         });
-        const canvasEl = document.getElementById(this.#rootId + "_canvas");
+        const canvasEl = document.getElementById(
+          this.#rootId + "_canvas"
+        );
         canvasEl.appendChild(memo);
 
         this.#state = _DEFAULTSTATE;
