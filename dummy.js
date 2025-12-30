@@ -23,7 +23,7 @@ const PATHS = [
   {
     id: "root_path_lpnu8n",
     fill: "none",
-    stroke: "red",
+    stroke: "blue",
     strokeWidth: "3",
     startX: "107",
     startY: "107",
@@ -34,7 +34,7 @@ const PATHS = [
   {
     id: "root_path_frmz17",
     fill: "none",
-    stroke: "red",
+    stroke: "blue",
     strokeWidth: "3",
     startX: "138",
     startY: "208",
@@ -45,7 +45,7 @@ const PATHS = [
   {
     id: "root_path_1pjp4w2",
     fill: "none",
-    stroke: "red",
+    stroke: "blue",
     strokeWidth: "3",
     startX: "280",
     startY: "102",
@@ -56,7 +56,7 @@ const PATHS = [
   {
     id: "root_path_1v1oud3",
     fill: "none",
-    stroke: "red",
+    stroke: "blue",
     strokeWidth: "3",
     startX: "296",
     startY: "255",

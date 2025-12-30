@@ -1,10 +1,18 @@
 {
   "name": "image_memo",
   "version": "1.0.0",
-  "description": "",
+  "description": "image 에 메모(article) 기능 넣어보기",
+  "homepage": "https://github.com/eagleduk/image-memo#readme",
+  "bugs": {
+    "url": "https://github.com/eagleduk/image-memo/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eagleduk/image-memo.git"
+  },
   "license": "ISC",
   "author": "",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
