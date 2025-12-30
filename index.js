@@ -1,12 +1,12 @@
 import { getMousePosition, updateSvgPath } from "./position.js";
 
 // 시작전(이미지 로드 전), 이미지 로드 후, 텍스트 박스 찍기, 텍스트 입력 중, 라인 그리기 시작, 라인 그리는 중
-const _DEFAULTSTATE = null;
-const _TEXTSTATE = 0;
-const _LINESTATE = 1;
-const _DRAWINGSTATE = 2;
-const _TYPINGSTATE = 3;
-const _READYSTATE = -1;
+const _READYSTATE = null;
+const _DEFAULTSTATE = 0;
+const _TEXTSTATE = 10;
+const _TYPINGSTATE = 11;
+const _LINESTATE = 20;
+const _DRAWINGSTATE = 21;
 
 export default class ImageMemo {
   // 기본 option
