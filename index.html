@@ -8,6 +8,7 @@
   </head>
 
   <body style="width: 100vw; height: 100vh">
+    <script src="./proxy.js"></script>
     <script src="./index.js"></script>
     <script src="./dummy.js"></script>
 
@@ -21,13 +22,12 @@
       const memo = new ImageMemo("root");
 
       console.log("memo", memo);
-      memo.setInfo("root");
       //   memo.render();
 
-      //   memo.setData({
-      //     MEMOS,
-      //     PATHS,
-      //   });
+      memo.setData({
+        MEMOS,
+        PATHS,
+      });
 
       // memo.add({
       //     MEMOS,
