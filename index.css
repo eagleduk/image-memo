@@ -80,3 +80,7 @@ input[type="file"] {
   width: anchor-size(attr(target-anchor));
   height: anchor-size(attr(target-anchor));
 }
+
+path {
+  cursor: pointer;
+}

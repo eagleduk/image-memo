@@ -8,6 +8,10 @@ const _TYPINGSTATE = 11;
 const _LINESTATE = 20;
 const _DRAWINGSTATE = 21;
 
+// 등록/삭제 상태
+const _CREATE = 1;
+const _DELETE = -1;
+
 export default class ImageMemo {
   // 기본 option
   #rootId;
@@ -21,7 +25,7 @@ export default class ImageMemo {
 
   // UI 상태 관련
   #focus = null;
-  #state = _DEFAULTSTATE;
+  #state = _READYSTATE;
 
   // init data 관련
   #data = null;
@@ -48,11 +52,17 @@ export default class ImageMemo {
     window.addEventListener("keydown", (e) => {
       console.log("extra Key", e);
       if (e.code === "Escape") {
+        this.#state = _DEFAULTSTATE;
         this.#onResetFocus(e);
       } else if (e.code === "Delete") {
+        if(this.#state === _TYPINGSTATE) {
+          return;
+        }
         if (this.#focus) {
           // TODO: 텍스트 입력중 바로 삭제해버림. 입력중 상태라도 필요할 듯
-          document.getElementById(this.#focus).remove();
+          const element = document.getElementById(this.#focus);
+          this.#addTimeLine({ type: _DELETE, element: element });
+          element.remove();
           this.#focus = null;
         }
       }
@@ -64,6 +74,12 @@ export default class ImageMemo {
     //   e.stopImmediatePropagation();
     //   console.log("keyup", e);
     // });
+  }
+
+  #addTimeLine({type, element}) {
+    console.log("before add timeline: ", [...this.#prevState]);
+    this.#prevState.push({ type, element });
+    console.log("after add timeline: ", [...this.#prevState]);
   }
 
   setData(data) {
@@ -118,11 +134,13 @@ export default class ImageMemo {
     console.log("onResetFocus ", e);
     const element = e.target;
 
-    if (this.#state !== _DEFAULTSTATE) return;
+    if (this.#state === _READYSTATE 
+      || this.#state === _DRAWINGSTATE) return;
 
     if (
       element.nodeName === "ARTICLE" ||
-      (element.nodeName === "INPUT" && element.type === "color")
+      (element.nodeName === "INPUT" && element.type === "color") ||
+      element.nodeName === "path"
     ) {
       return;
     }
@@ -338,6 +356,7 @@ export default class ImageMemo {
     textArea.innerHTML = text;
     textArea.addEventListener("click", (e) => {
       e.stopPropagation();
+      this.#state = _TYPINGSTATE;
       console.log("text area clicked", memoId);
       memo.classList.add("focus");
       this.#focus = memoId;
@@ -347,6 +366,7 @@ export default class ImageMemo {
       if (e.ctrlKey && e.key === "Enter") {
         textArea.blur();
         memo.classList.remove("focus");
+        this.#state = _DEFAULTSTATE;
         this.#focus = null;
       }
     });
@@ -356,6 +376,7 @@ export default class ImageMemo {
 
     this.#memos.push(memo);
     this.#ids.push(memoId);
+    this.#addTimeLine({ type: _CREATE, element: memo });
     return memo;
   }
 
@@ -375,6 +396,8 @@ export default class ImageMemo {
     path.setAttribute("stroke-linejoin", "round");
     path.classList.add("path");
     path.addEventListener("click", (e) => {
+      // e.stopPropagation();
+      console.log("path clicked", pathId);
       this.#focus = pathId;
       this.#paths.forEach((path) => path.classList.remove("focus"));
       path.classList.add("focus");
@@ -393,6 +416,7 @@ export default class ImageMemo {
     this.#state = _DRAWINGSTATE;
     this.#focus = pathId;
     this.#paths.push(path);
+    this.#addTimeLine({ type: _CREATE, element: path });
 
     return path;
   }
@@ -430,11 +454,12 @@ export default class ImageMemo {
       paint.setAttribute("height", image.clientHeight);
 
       this.add(this.#data);
+      this.#state = _DEFAULTSTATE;
     });
 
     svg.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
       if (this.#state === _DRAWINGSTATE) {
+        e.preventDefault();
         this.#state = _DEFAULTSTATE;
         this.#StateBtnEnabled();
         document.getElementById(this.#focus).remove();
@@ -456,7 +481,7 @@ export default class ImageMemo {
         this.#state = _DEFAULTSTATE;
         this.#StateBtnEnabled();
       } else if (this.#state === _LINESTATE) {
-        const path = this.#createPath(e);
+        const path = this.#createPath(e, {});
 
         // appendToBuffer(pt);
         // const strPath = "M" + pt.x + " " + pt.y;
@@ -475,7 +500,8 @@ export default class ImageMemo {
 
         const { x, y } = updateSvgPath(e, this.#rootId + "_paint", focus);
 
-        const path = this.#createPath(e);
+        const path = this.#createPath(e, {});
+
 
         const canvasEl = document.getElementById(this.#rootId + "_paint");
         canvasEl.appendChild(path);
