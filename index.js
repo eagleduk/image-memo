@@ -33,7 +33,7 @@ export default class ImageMemo {
   // timeline 관련
   #prevState = [];
   #nextState = [];
-
+    
   constructor(rootId, opt = {}) {
     this.#rootId = rootId;
     this.#options = opt;
@@ -43,30 +43,12 @@ export default class ImageMemo {
 
     this.#render();
 
-    window.addEventListener("click", (e) => {
-      this.#onResetFocus(e);
-    });
 
-    window.addEventListener("keypress", (e) => this.#onShortcutEvent(e));
+    window.addEventListener("click", this.#onWindowClickEventHandler);
 
-    window.addEventListener("keydown", (e) => {
-      console.log("extra Key", e);
-      if (e.code === "Escape") {
-        this.#state = _DEFAULTSTATE;
-        this.#onResetFocus(e);
-      } else if (e.code === "Delete") {
-        if(this.#state === _TYPINGSTATE) {
-          return;
-        }
-        if (this.#focus) {
-          // TODO: 텍스트 입력중 바로 삭제해버림. 입력중 상태라도 필요할 듯
-          const element = document.getElementById(this.#focus);
-          this.#addTimeLine({ type: _DELETE, element: element });
-          element.remove();
-          this.#focus = null;
-        }
-      }
-    });
+    window.addEventListener("keypress", this.#onWindowKeypressEventHandler);
+
+    window.addEventListener("keydown", this.#onWindowKeydownEventHandler);
 
     // window.addEventListener("keyup", (e) => {
     //   e.stopPropagation();
@@ -76,9 +58,24 @@ export default class ImageMemo {
     // });
   }
 
+  // set #focus(value) {
+  //   console.log("set focus", value);
+  //   this.#focus = value;
+  // }
+
+  // get #focus() {
+  //   console.log("get focus", this.#focus);
+  //   return this.#focus;
+  // }
+
+  #acacacacacaca(e) {
+    console.log("acacacacacaca", e);
+    this.#onWindowClickEventHandler(e)
+  }
+
   #addTimeLine({type, element}) {
     console.log("before add timeline: ", [...this.#prevState]);
-    this.#prevState.push({ type, element });
+    this.#prevState.push({ type, target: element.id, element });
     console.log("after add timeline: ", [...this.#prevState]);
   }
 
@@ -126,12 +123,19 @@ export default class ImageMemo {
   }
 
   destroy() {
-    window.removeEventListener("click", this.#onResetFocus);
-    window.removeEventListener("keypress", this.#onShortcutEvent);
+    // Question: 필요한지?
+    window.removeEventListener("click", this.#onWindowClickEventHandler);
+    window.removeEventListener("keypress", this.#onWindowKeypressEventHandler);
+    window.removeEventListener("keydown", this.#onWindowKeydownEventHandler);
+    
+    const root = document.getElementById(this.#rootId);
+    root.remove();
   }
 
-  #onResetFocus(e) {
-    console.log("onResetFocus ", e);
+  // #c = this.#onWindowClickEventHandler.bind(this);
+
+  #onWindowClickEventHandler = (function(e) {
+    console.log("onWindowClickEventHandler ", e);
     const element = e.target;
 
     if (this.#state === _READYSTATE 
@@ -155,17 +159,69 @@ export default class ImageMemo {
     });
 
     this.#focus = null;
-  }
+  }).bind(this);
 
-  #onShortcutEvent(e) {
+  #onWindowKeypressEventHandler = (function(e) {
     console.log(this.#focus, "onShortcut ", e);
     if (this.#focus !== null) return;
 
+    
+    // TODO: 되돌리기 실행취소 테스트
     if (e.ctrlKey && e.code === "KeyZ") {
-      console.log("실행 취소 - Undo");
+      console.log("실행취소 ", [...this.#prevState]);
+
+      if(this.#prevState.length === 0) return;
+
+      const latest = this.#prevState.pop();
+
+      this.#nextState.push(latest);
+
+      if(latest.type === _CREATE) {
+        const element = document.getElementById(latest.target);
+        element.remove();
+      } else if(latest.type === _DELETE) {
+        const element = latest.element;
+        
+        if(element.nodeName === "ARTICLE") {
+          const canvasEl = document.getElementById(this.#rootId + "_canvas");
+          canvasEl.appendChild(element);
+        }
+        
+        if(element.nodeName === "path") {
+          const canvasEl = document.getElementById(this.#rootId + "_paint");
+          canvasEl.appendChild(element);
+        }
+        
+      }
+
     }
     if (e.ctrlKey && e.code === "KeyY") {
       console.log("되돌리기");
+
+      if(this.#nextState.length === 0) return;
+      
+      const latest = this.#nextState.pop();
+
+      this.#prevState.push(latest);
+
+      if(latest.type === _CREATE) {
+        const element = latest.element;
+        
+        if(element.nodeName === "ARTICLE") {
+          const canvasEl = document.getElementById(this.#rootId + "_canvas");
+          canvasEl.appendChild(element);
+        }
+        
+        if(element.nodeName === "path") {
+          const canvasEl = document.getElementById(this.#rootId + "_paint");
+          canvasEl.appendChild(element);
+        }
+        
+      } else if(latest.type === _DELETE) {
+        const element = document.getElementById(latest.target);
+        element.remove();
+      }
+
     }
 
     if (e.code === "KeyL") {
@@ -180,7 +236,26 @@ export default class ImageMemo {
       );
       addTextAreaBtnEl.click();
     }
-  }
+  }).bind(this);
+
+  #onWindowKeydownEventHandler = (function(e) {
+      console.log("extra Key", e);
+      if (e.code === "Escape") {
+        this.#state = _DEFAULTSTATE;
+        this.#onWindowClickEventHandler(e);
+      } else if (e.code === "Delete") {
+        if(this.#state === _TYPINGSTATE) {
+          return;
+        }
+        if (this.#focus) {
+          // TODO: 텍스트 입력중 바로 삭제해버림. 입력중 상태라도 필요할 듯
+          const element = document.getElementById(this.#focus);
+          this.#addTimeLine({ type: _DELETE, element: element });
+          element.remove();
+          this.#focus = null;
+        }
+      }
+  }).bind(this);
 
   #render() {
     const root = document.getElementById(this.#rootId);
@@ -201,6 +276,20 @@ export default class ImageMemo {
     fileEl.addEventListener("change", (e) => {
       const imgEl = document.getElementById(this.#rootId + "_image");
       const uploadFile = e.target.files;
+
+      this.#memos = [];
+      this.#paths = [];
+
+      this.#ids = [];
+
+      this.#focus = null;
+      this.#state = _READYSTATE;
+
+      this.#data = null;
+
+      this.#prevState = [];
+      this.#nextState = [];
+
       if (!uploadFile || uploadFile?.length === 0) {
         imgEl.src = "";
         return;
@@ -425,14 +514,14 @@ export default class ImageMemo {
     const content = document.createElement("div");
     content.className = "memo_content";
     content.addEventListener("click", (e) => {
-      this.#onResetFocus(e);
+      this.#onWindowClickEventHandler(e);
     });
 
-    // content.addEventListener("keypress", (e) => this.#onShortcutEvent(e));
+    // content.addEventListener("keypress", (e) => this.#onWindowKeypressEventHandler(e));
 
     // content.addEventListener("keydown", (e) => {
     //   if (e.code === "Escape") {
-    //     this.#onResetFocus(e);
+    //     this.#onWindowClickEventHandler(e);
     //   }
     // });
 
@@ -463,6 +552,7 @@ export default class ImageMemo {
         this.#state = _DEFAULTSTATE;
         this.#StateBtnEnabled();
         document.getElementById(this.#focus).remove();
+        this.#prevState.pop();
         this.#paths.pop();
       }
     });
