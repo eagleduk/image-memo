@@ -33,7 +33,7 @@ export default class ImageMemo {
   // timeline 관련
   #prevState = [];
   #nextState = [];
-    
+
   constructor(rootId, opt = {}) {
     this.#rootId = rootId;
     this.#options = opt;
@@ -43,7 +43,7 @@ export default class ImageMemo {
 
     this.#render();
 
-
+    // TODO: 윈도우가 아닌 root 영역으로 잡는게 좋을 듯.
     window.addEventListener("click", this.#onWindowClickEventHandler);
 
     window.addEventListener("keypress", this.#onWindowKeypressEventHandler);
@@ -70,10 +70,10 @@ export default class ImageMemo {
 
   #acacacacacaca(e) {
     console.log("acacacacacaca", e);
-    this.#onWindowClickEventHandler(e)
+    this.#onWindowClickEventHandler(e);
   }
 
-  #addTimeLine({type, element}) {
+  #addTimeLine({ type, element }) {
     console.log("before add timeline: ", [...this.#prevState]);
     this.#prevState.push({ type, target: element.id, element });
     console.log("after add timeline: ", [...this.#prevState]);
@@ -123,27 +123,26 @@ export default class ImageMemo {
   }
 
   destroy() {
-    // Question: 필요한지?
     window.removeEventListener("click", this.#onWindowClickEventHandler);
     window.removeEventListener("keypress", this.#onWindowKeypressEventHandler);
     window.removeEventListener("keydown", this.#onWindowKeydownEventHandler);
-    
+
     const root = document.getElementById(this.#rootId);
     root.remove();
   }
 
   // #c = this.#onWindowClickEventHandler.bind(this);
 
-  #onWindowClickEventHandler = (function(e) {
+  #onWindowClickEventHandler = function (e) {
     console.log("onWindowClickEventHandler ", e);
     const element = e.target;
 
-    if (this.#state === _READYSTATE 
-      || this.#state === _DRAWINGSTATE) return;
+    if (this.#state === _READYSTATE || this.#state === _DRAWINGSTATE) return;
 
     if (
       element.nodeName === "ARTICLE" ||
       (element.nodeName === "INPUT" && element.type === "color") ||
+      (element.nodeName === "INPUT" && element.type === "number") ||
       element.nodeName === "path"
     ) {
       return;
@@ -159,69 +158,64 @@ export default class ImageMemo {
     });
 
     this.#focus = null;
-  }).bind(this);
+  }.bind(this);
 
-  #onWindowKeypressEventHandler = (function(e) {
+  #onWindowKeypressEventHandler = function (e) {
     console.log(this.#focus, "onShortcut ", e);
     if (this.#focus !== null) return;
 
-    
     // TODO: 되돌리기 실행취소 테스트
     if (e.ctrlKey && e.code === "KeyZ") {
       console.log("실행취소 ", [...this.#prevState]);
 
-      if(this.#prevState.length === 0) return;
+      if (this.#prevState.length === 0) return;
 
       const latest = this.#prevState.pop();
 
       this.#nextState.push(latest);
 
-      if(latest.type === _CREATE) {
+      if (latest.type === _CREATE) {
         const element = document.getElementById(latest.target);
         element.remove();
-      } else if(latest.type === _DELETE) {
+      } else if (latest.type === _DELETE) {
         const element = latest.element;
-        
-        if(element.nodeName === "ARTICLE") {
+
+        if (element.nodeName === "ARTICLE") {
           const canvasEl = document.getElementById(this.#rootId + "_canvas");
           canvasEl.appendChild(element);
         }
-        
-        if(element.nodeName === "path") {
+
+        if (element.nodeName === "path") {
           const canvasEl = document.getElementById(this.#rootId + "_paint");
           canvasEl.appendChild(element);
         }
-        
       }
-
     }
     if (e.ctrlKey && e.code === "KeyY") {
       console.log("되돌리기");
 
-      if(this.#nextState.length === 0) return;
-      
+      if (this.#nextState.length === 0) return;
+
       const latest = this.#nextState.pop();
 
       this.#prevState.push(latest);
 
-      if(latest.type === _CREATE) {
+      if (latest.type === _CREATE) {
         const element = latest.element;
-        
-        if(element.nodeName === "ARTICLE") {
+
+        if (element.nodeName === "ARTICLE") {
           const canvasEl = document.getElementById(this.#rootId + "_canvas");
           canvasEl.appendChild(element);
         }
-        
-        if(element.nodeName === "path") {
+
+        if (element.nodeName === "path") {
           const canvasEl = document.getElementById(this.#rootId + "_paint");
           canvasEl.appendChild(element);
         }
-        
-      } else if(latest.type === _DELETE) {
+      } else if (latest.type === _DELETE) {
         const element = document.getElementById(latest.target);
         element.remove();
       }
-
     }
 
     if (e.code === "KeyL") {
@@ -236,26 +230,26 @@ export default class ImageMemo {
       );
       addTextAreaBtnEl.click();
     }
-  }).bind(this);
+  }.bind(this);
 
-  #onWindowKeydownEventHandler = (function(e) {
-      console.log("extra Key", e);
-      if (e.code === "Escape") {
-        this.#state = _DEFAULTSTATE;
-        this.#onWindowClickEventHandler(e);
-      } else if (e.code === "Delete") {
-        if(this.#state === _TYPINGSTATE) {
-          return;
-        }
-        if (this.#focus) {
-          // TODO: 텍스트 입력중 바로 삭제해버림. 입력중 상태라도 필요할 듯
-          const element = document.getElementById(this.#focus);
-          this.#addTimeLine({ type: _DELETE, element: element });
-          element.remove();
-          this.#focus = null;
-        }
+  #onWindowKeydownEventHandler = function (e) {
+    console.log("extra Key", e);
+    if (e.code === "Escape") {
+      this.#state = _DEFAULTSTATE;
+      this.#onWindowClickEventHandler(e);
+    } else if (e.code === "Delete") {
+      if (this.#state === _TYPINGSTATE) {
+        return;
       }
-  }).bind(this);
+      if (this.#focus) {
+        // TODO: 텍스트 입력중 바로 삭제해버림. 입력중 상태라도 필요할 듯
+        const element = document.getElementById(this.#focus);
+        this.#addTimeLine({ type: _DELETE, element: element });
+        element.remove();
+        this.#focus = null;
+      }
+    }
+  }.bind(this);
 
   #render() {
     const root = document.getElementById(this.#rootId);
@@ -380,6 +374,56 @@ export default class ImageMemo {
     toolbar.appendChild(addTextAreaBtnEl);
     toolbar.appendChild(addLineBtnEl);
 
+    const textColorPicker = document.createElement("input");
+    textColorPicker.type = "color";
+    textColorPicker.value = "#000000";
+    textColorPicker.title = "텍스트 색상";
+    textColorPicker.addEventListener("input", (e) => {
+      const focus = this.#focus;
+      if (!focus) return;
+
+      const element = document.getElementById(focus);
+      if (element && element.nodeName === "ARTICLE") {
+        element.style.color = e.target.value;
+      }
+    });
+
+    const textSizePicker = document.createElement("input");
+    textSizePicker.type = "number";
+    textSizePicker.min = "8";
+    textSizePicker.max = "72";
+    textSizePicker.value = "16";
+    textSizePicker.title = "텍스트 크기";
+    textSizePicker.addEventListener("input", (e) => {
+      const focus = this.#focus;
+      if (!focus) return;
+
+      const element = document.getElementById(focus);
+      if (element && element.nodeName === "ARTICLE") {
+        element.style.fontSize = e.target.value + "px";
+      }
+    });
+
+    const borderColorPicker = document.createElement("input");
+    borderColorPicker.type = "color";
+    borderColorPicker.value = "#000000";
+    borderColorPicker.title = "라인 색상";
+    borderColorPicker.addEventListener("input", (e) => {
+      const focus = this.#focus;
+      if (!focus) return;
+
+      const element = document.getElementById(focus);
+      if (element && element.nodeName === "ARTICLE") {
+        element.style.borderColor = e.target.value;
+      } else if (element && element.nodeName === "path") {
+        element.setAttribute("stroke", e.target.value);
+      }
+    });
+
+    toolbar.appendChild(textColorPicker);
+    toolbar.appendChild(textSizePicker);
+    toolbar.appendChild(borderColorPicker);
+
     return toolbar;
   }
 
@@ -440,6 +484,11 @@ export default class ImageMemo {
       memo.classList.add("focus");
       this.#focus = memoId;
     });
+
+    new ResizeObserver((entries) => {
+      console.log("container resized", entries.target);
+    }).observe(memo);
+
     const textArea = document.createElement("div");
     textArea.contentEditable = true;
     textArea.innerHTML = text;
@@ -591,7 +640,6 @@ export default class ImageMemo {
         const { x, y } = updateSvgPath(e, this.#rootId + "_paint", focus);
 
         const path = this.#createPath(e, {});
-
 
         const canvasEl = document.getElementById(this.#rootId + "_paint");
         canvasEl.appendChild(path);
