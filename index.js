@@ -39,44 +39,73 @@ export default class ImageMemo {
     this.#options = opt;
     this.#memos = [];
     this.#ids = [];
-    this.#focus = null;
+    this.#changeFocus(null);
 
     this.#render();
 
     // TODO: 윈도우가 아닌 root 영역으로 잡는게 좋을 듯.
     window.addEventListener("click", this.#onWindowClickEventHandler);
 
+    // TODO: keypress 이벤트 deprecated
     window.addEventListener("keypress", this.#onWindowKeypressEventHandler);
 
     window.addEventListener("keydown", this.#onWindowKeydownEventHandler);
-
-    // window.addEventListener("keyup", (e) => {
-    //   e.stopPropagation();
-    //   e.preventDefault();
-    //   e.stopImmediatePropagation();
-    //   console.log("keyup", e);
-    // });
-  }
-
-  // set #focus(value) {
-  //   console.log("set focus", value);
-  //   this.#focus = value;
-  // }
-
-  // get #focus() {
-  //   console.log("get focus", this.#focus);
-  //   return this.#focus;
-  // }
-
-  #acacacacacaca(e) {
-    console.log("acacacacacaca", e);
-    this.#onWindowClickEventHandler(e);
   }
 
   #addTimeLine({ type, element }) {
     console.log("before add timeline: ", [...this.#prevState]);
     this.#prevState.push({ type, target: element.id, element });
+    this.#nextState = [];
     console.log("after add timeline: ", [...this.#prevState]);
+  }
+
+  // INFO: 임시 rgb => hex
+  #rgb2Hex(_rgbColor) {
+    if (_rgbColor === "") return "#000000";
+    const r =
+      "#" +
+      _rgbColor
+        .match(/rgb[a]{0,1}\((\d+)\,[\s]{0,}(\d+)\,[\s]{0,}(\d+)/)
+        .filter((_, i) => i > 0 && i <= 3)
+        .map((v) => parseInt(v).toString(16).padStart(2, "0"))
+        .join("");
+    return r;
+  }
+
+  #changeFocus(element) {
+    console.log("change focus", element);
+    if (!element) {
+      this.#focus = null;
+      return;
+    }
+    this.#focus = element.id;
+
+    const textColorPicker = document.getElementById(
+      this.#rootId + "_text_color_picker"
+    );
+    const textSizePicker = document.getElementById(
+      this.#rootId + "_text_size_picker"
+    );
+    const borderColorPicker = document.getElementById(
+      this.#rootId + "_border_color_picker"
+    );
+
+    if (element.nodeName === "ARTICLE") {
+      const {
+        style: { color, fontSize, borderColor },
+      } = element;
+
+      textColorPicker.value = this.#rgb2Hex(color);
+      textSizePicker.value = fontSize.slice(0, -2);
+      borderColorPicker.value = this.#rgb2Hex(borderColor);
+    } else if (element.nodeName === "path") {
+      const {
+        attributes: {
+          stroke: { value: stroke },
+        },
+      } = element;
+      borderColorPicker.value = this.#rgb2Hex(stroke);
+    }
   }
 
   setData(data) {
@@ -157,7 +186,7 @@ export default class ImageMemo {
       path.classList.remove("focus");
     });
 
-    this.#focus = null;
+    this.#changeFocus(null);
   }.bind(this);
 
   #onWindowKeypressEventHandler = function (e) {
@@ -246,7 +275,7 @@ export default class ImageMemo {
         const element = document.getElementById(this.#focus);
         this.#addTimeLine({ type: _DELETE, element: element });
         element.remove();
-        this.#focus = null;
+        this.#changeFocus(null);
       }
     }
   }.bind(this);
@@ -259,6 +288,10 @@ export default class ImageMemo {
 
     root.appendChild(toolbar);
     root.appendChild(content);
+
+    root.addEventListener("keyup", (e) => {
+      console.log("keyup", e);
+    });
   }
 
   #renderToolbar() {
@@ -276,7 +309,7 @@ export default class ImageMemo {
 
       this.#ids = [];
 
-      this.#focus = null;
+      this.#changeFocus(null);
       this.#state = _READYSTATE;
 
       this.#data = null;
@@ -375,6 +408,7 @@ export default class ImageMemo {
     toolbar.appendChild(addLineBtnEl);
 
     const textColorPicker = document.createElement("input");
+    textColorPicker.id = this.#rootId + "_text_color_picker";
     textColorPicker.type = "color";
     textColorPicker.value = "#000000";
     textColorPicker.title = "텍스트 색상";
@@ -389,6 +423,7 @@ export default class ImageMemo {
     });
 
     const textSizePicker = document.createElement("input");
+    textSizePicker.id = this.#rootId + "_text_size_picker";
     textSizePicker.type = "number";
     textSizePicker.min = "8";
     textSizePicker.max = "72";
@@ -405,13 +440,14 @@ export default class ImageMemo {
     });
 
     const borderColorPicker = document.createElement("input");
+    borderColorPicker.id = this.#rootId + "_border_color_picker";
     borderColorPicker.type = "color";
     borderColorPicker.value = "#000000";
     borderColorPicker.title = "라인 색상";
     borderColorPicker.addEventListener("input", (e) => {
+      console.log("line color", e);
       const focus = this.#focus;
       if (!focus) return;
-
       const element = document.getElementById(focus);
       if (element && element.nodeName === "ARTICLE") {
         element.style.borderColor = e.target.value;
@@ -482,7 +518,7 @@ export default class ImageMemo {
       this.#memos.forEach((memo) => memo.classList.remove("focus"));
 
       memo.classList.add("focus");
-      this.#focus = memoId;
+      this.#changeFocus(memo);
     });
 
     new ResizeObserver((entries) => {
@@ -497,7 +533,7 @@ export default class ImageMemo {
       this.#state = _TYPINGSTATE;
       console.log("text area clicked", memoId);
       memo.classList.add("focus");
-      this.#focus = memoId;
+      this.#changeFocus(memo);
     });
 
     textArea.addEventListener("keydown", (e) => {
@@ -505,7 +541,7 @@ export default class ImageMemo {
         textArea.blur();
         memo.classList.remove("focus");
         this.#state = _DEFAULTSTATE;
-        this.#focus = null;
+        this.#changeFocus(null);
       }
     });
 
@@ -536,7 +572,7 @@ export default class ImageMemo {
     path.addEventListener("click", (e) => {
       // e.stopPropagation();
       console.log("path clicked", pathId);
-      this.#focus = pathId;
+      this.#changeFocus(pathId);
       this.#paths.forEach((path) => path.classList.remove("focus"));
       path.classList.add("focus");
     });
@@ -552,7 +588,7 @@ export default class ImageMemo {
     canvasEl.appendChild(path);
 
     this.#state = _DRAWINGSTATE;
-    this.#focus = pathId;
+    this.#changeFocus(path);
     this.#paths.push(path);
     this.#addTimeLine({ type: _CREATE, element: path });
 
@@ -562,9 +598,6 @@ export default class ImageMemo {
   #renderContent() {
     const content = document.createElement("div");
     content.className = "memo_content";
-    content.addEventListener("click", (e) => {
-      this.#onWindowClickEventHandler(e);
-    });
 
     // content.addEventListener("keypress", (e) => this.#onWindowKeypressEventHandler(e));
 
@@ -630,7 +663,7 @@ export default class ImageMemo {
         canvasEl.appendChild(path);
 
         this.#state = _DRAWINGSTATE;
-        // this.#focus = pathId;
+        // this.#changeFocus(path);
         // this.#paths.push(path);
       } else if (this.#state === _DRAWINGSTATE) {
         const focus = this.#focus;
@@ -645,7 +678,7 @@ export default class ImageMemo {
         canvasEl.appendChild(path);
 
         this.#state = _DRAWINGSTATE;
-        // this.#focus = pathId;
+        // this.#changeFocus(path);
         // this.#paths.push(path);
       }
     });
