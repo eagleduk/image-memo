@@ -290,9 +290,12 @@ export default class ImageMemo {
 
     const toolbar = this.#renderToolbar();
     const content = this.#renderContent();
+    const result = document.createElement("canvas");
+    result.id = this.#rootId + "_canvas_result";
 
     root.appendChild(toolbar);
     root.appendChild(content);
+    root.appendChild(result);
 
     root.addEventListener("keyup", (e) => {
       console.log("keyup", e);
@@ -356,18 +359,39 @@ export default class ImageMemo {
       const memos = this.#memos.map((memo) => {
         const {
           innerHTML,
-          style: { top, left, backgroundColor, color },
+          innerText,
+          style: {
+            top,
+            left,
+            backgroundColor,
+            color,
+            fontSize,
+            width,
+            height,
+            borderColor,
+          },
           offsetLeft,
           offsetTop,
+          offsetWidth,
+          offsetHeight,
           id,
         } = memo;
         return {
           innerHTML,
           offsetLeft,
           offsetTop,
+          offsetWidth,
+          offsetHeight,
           backgroundColor,
           color,
           id,
+          fontSize,
+          // width,
+          // height,
+          borderColor,
+          innerText,
+          // top,
+          // left,
         };
       });
 
@@ -398,6 +422,50 @@ export default class ImageMemo {
 
       console.log("memos :: ", memos);
       console.log("lines :: ", lines);
+
+      const image = document.getElementById(this.#rootId + "_image");
+
+      const canvasResult = document.getElementById(
+        this.#rootId + "_canvas_result"
+      );
+
+      canvasResult.setAttribute("width", image.clientWidth);
+      canvasResult.setAttribute("height", image.clientHeight);
+      canvasResult.style.width = image.clientWidth + "px";
+      canvasResult.style.height = image.clientHeight + "px";
+      const ctx = canvasResult.getContext("2d");
+
+      ctx.drawImage(image, 0, 0, image.clientWidth, image.clientHeight);
+
+      memos.forEach((memo) => {
+        const {
+          innerHTML,
+          offsetLeft,
+          offsetTop,
+          offsetWidth,
+          offsetHeight,
+          backgroundColor,
+          color,
+          id,
+          fontSize,
+          // width,
+          // height,
+          borderColor,
+          // top,
+          // left,
+          innerText,
+        } = memo;
+
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(offsetLeft, offsetTop, offsetWidth, offsetHeight);
+
+        // window.getComputedStyle(document.getElementById("root_memo_1ldj5g9")).getPropertyValue('font-family');
+        ctx.fillStyle = color;
+        ctx.font = fontSize;
+        console.log(fontSize, ctx);
+        ctx.fillText(innerText, offsetLeft, offsetTop);
+      });
     });
 
     const addTextAreaBtnEl = document.createElement("button");
