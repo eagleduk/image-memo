@@ -42,8 +42,8 @@ input[type="file"] {
   left: 0;
   padding: 15px;
   position-anchor: "--" + attr(data-anchor) + "-canvas";
-  min-width: 100px;
-  min-height: 30px;
+  width: 100px;
+  height: 30px;
   border: 4px solid blue;
   /* transform: translate(-50%, -50%); */
   cursor: all-scroll;
@@ -53,6 +53,9 @@ input[type="file"] {
   & > div {
     cursor: text;
     outline: none;
+    width: 100%;
+    height: 100%;
+    align-content: center;
   }
 }
 

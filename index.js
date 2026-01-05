@@ -62,6 +62,11 @@ export default class ImageMemo {
   // INFO: 임시 rgb => hex
   #rgb2Hex(_rgbColor) {
     if (_rgbColor === "") return "#000000";
+
+    if (_rgbColor.startsWith("#")) {
+      return _rgbColor;
+    }
+
     const r =
       "#" +
       _rgbColor
@@ -72,9 +77,12 @@ export default class ImageMemo {
     return r;
   }
 
+  #changeState(state) {
+    this.#state = state;
+  }
+
   #changeFocus(element) {
-    console.log("change focus", element);
-    if (!element) {
+    if (element === null) {
       this.#focus = null;
       return;
     }
@@ -163,7 +171,6 @@ export default class ImageMemo {
   // #c = this.#onWindowClickEventHandler.bind(this);
 
   #onWindowClickEventHandler = function (e) {
-    console.log("onWindowClickEventHandler ", e);
     const element = e.target;
 
     if (this.#state === _READYSTATE || this.#state === _DRAWINGSTATE) return;
@@ -189,12 +196,28 @@ export default class ImageMemo {
     this.#changeFocus(null);
   }.bind(this);
 
-  #onWindowKeypressEventHandler = function (e) {
-    console.log(this.#focus, "onShortcut ", e);
-    if (this.#focus !== null) return;
+  #onWindowKeypressEventHandler = function (e) {}.bind(this);
 
+  #onWindowKeydownEventHandler = function (e) {
+    console.log("extra Key", e);
+    if (e.code === "Escape") {
+      this.#changeState(_DEFAULTSTATE);
+      this.#onWindowClickEventHandler(e);
+    } else if (e.code === "Delete") {
+      if (this.#state === _TYPINGSTATE) {
+        return;
+      }
+      if (this.#focus) {
+        // TODO: 텍스트 입력중 바로 삭제해버림. 입력중 상태라도 필요할 듯
+        const element = document.getElementById(this.#focus);
+        this.#addTimeLine({ type: _DELETE, element: element });
+        element.remove();
+        this.#changeFocus(null);
+      }
+    }
     // TODO: 되돌리기 실행취소 테스트
     if (e.ctrlKey && e.code === "KeyZ") {
+      if (this.#focus !== null) return;
       console.log("실행취소 ", [...this.#prevState]);
 
       if (this.#prevState.length === 0) return;
@@ -222,6 +245,7 @@ export default class ImageMemo {
     }
     if (e.ctrlKey && e.code === "KeyY") {
       console.log("되돌리기");
+      if (this.#focus !== null) return;
 
       if (this.#nextState.length === 0) return;
 
@@ -261,25 +285,6 @@ export default class ImageMemo {
     }
   }.bind(this);
 
-  #onWindowKeydownEventHandler = function (e) {
-    console.log("extra Key", e);
-    if (e.code === "Escape") {
-      this.#state = _DEFAULTSTATE;
-      this.#onWindowClickEventHandler(e);
-    } else if (e.code === "Delete") {
-      if (this.#state === _TYPINGSTATE) {
-        return;
-      }
-      if (this.#focus) {
-        // TODO: 텍스트 입력중 바로 삭제해버림. 입력중 상태라도 필요할 듯
-        const element = document.getElementById(this.#focus);
-        this.#addTimeLine({ type: _DELETE, element: element });
-        element.remove();
-        this.#changeFocus(null);
-      }
-    }
-  }.bind(this);
-
   #render() {
     const root = document.getElementById(this.#rootId);
 
@@ -292,6 +297,18 @@ export default class ImageMemo {
     root.addEventListener("keyup", (e) => {
       console.log("keyup", e);
     });
+
+    root.addEventListener("paste", (event) => {
+      // Prevent the default paste behavior (e.g., stopping text from automatically appearing in an input field)
+      event.preventDefault();
+
+      const items = (event.clipboardData || event.originalEvent.clipboardData)
+        .items;
+
+      const file_input = document.getElementById(this.#rootId + "_file_input");
+      file_input.files = event.clipboardData.files;
+      file_input.dispatchEvent(new Event("change"));
+    });
   }
 
   #renderToolbar() {
@@ -299,18 +316,22 @@ export default class ImageMemo {
     toolbar.className = "toolbar";
 
     const fileEl = document.createElement("input");
+    fileEl.id = this.#rootId + "_file_input";
     fileEl.type = "file";
     fileEl.addEventListener("change", (e) => {
       const imgEl = document.getElementById(this.#rootId + "_image");
       const uploadFile = e.target.files;
 
+      this.#memos.forEach((m) => m.remove());
       this.#memos = [];
+
+      this.#paths.forEach((p) => p.remove());
       this.#paths = [];
 
       this.#ids = [];
 
       this.#changeFocus(null);
-      this.#state = _READYSTATE;
+      this.#changeState(_READYSTATE);
 
       this.#data = null;
 
@@ -383,10 +404,11 @@ export default class ImageMemo {
     addTextAreaBtnEl.id = this.#rootId + "_textArea_btn";
     addTextAreaBtnEl.textContent = "[ T ]";
     addTextAreaBtnEl.addEventListener("click", (e) => {
+      if (this.#state === _READYSTATE) return;
       this.#textStateEnabled();
       this.#lineStateEnabled();
 
-      this.#state = _TEXTSTATE;
+      this.#changeState(_TEXTSTATE);
       this.#textStateDisabled();
 
       // const memo = this.#createMemo();
@@ -398,7 +420,8 @@ export default class ImageMemo {
     addLineBtnEl.id = this.#rootId + "_line_btn";
     addLineBtnEl.textContent = "[ L ]";
     addLineBtnEl.addEventListener("click", (e) => {
-      this.#state = _LINESTATE;
+      if (this.#state === _READYSTATE) return;
+      this.#changeState(_LINESTATE);
       this.#lineStateDisabled();
     });
 
@@ -445,7 +468,6 @@ export default class ImageMemo {
     borderColorPicker.value = "#000000";
     borderColorPicker.title = "라인 색상";
     borderColorPicker.addEventListener("input", (e) => {
-      console.log("line color", e);
       const focus = this.#focus;
       if (!focus) return;
       const element = document.getElementById(focus);
@@ -530,7 +552,7 @@ export default class ImageMemo {
     textArea.innerHTML = text;
     textArea.addEventListener("click", (e) => {
       e.stopPropagation();
-      this.#state = _TYPINGSTATE;
+      this.#changeState(_TYPINGSTATE);
       console.log("text area clicked", memoId);
       memo.classList.add("focus");
       this.#changeFocus(memo);
@@ -540,7 +562,7 @@ export default class ImageMemo {
       if (e.ctrlKey && e.key === "Enter") {
         textArea.blur();
         memo.classList.remove("focus");
-        this.#state = _DEFAULTSTATE;
+        this.#changeState(_DEFAULTSTATE);
         this.#changeFocus(null);
       }
     });
@@ -554,7 +576,7 @@ export default class ImageMemo {
     return memo;
   }
 
-  #createPath(e, { fill = "none", stroke = "blue", strokeWidth = 3 }) {
+  #createPath(e, { fill = "none", stroke = "#000000", strokeWidth = 3 }) {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     const uuidStr = window.crypto
       .getRandomValues(new Uint32Array(1))[0]
@@ -572,7 +594,7 @@ export default class ImageMemo {
     path.addEventListener("click", (e) => {
       // e.stopPropagation();
       console.log("path clicked", pathId);
-      this.#changeFocus(pathId);
+      this.#changeFocus(document.getElementById(pathId));
       this.#paths.forEach((path) => path.classList.remove("focus"));
       path.classList.add("focus");
     });
@@ -587,7 +609,7 @@ export default class ImageMemo {
     const canvasEl = document.getElementById(this.#rootId + "_paint");
     canvasEl.appendChild(path);
 
-    this.#state = _DRAWINGSTATE;
+    this.#changeState(_DRAWINGSTATE);
     this.#changeFocus(path);
     this.#paths.push(path);
     this.#addTimeLine({ type: _CREATE, element: path });
@@ -625,13 +647,13 @@ export default class ImageMemo {
       paint.setAttribute("height", image.clientHeight);
 
       this.add(this.#data);
-      this.#state = _DEFAULTSTATE;
+      this.#changeState(_DEFAULTSTATE);
     });
 
     svg.addEventListener("contextmenu", (e) => {
       if (this.#state === _DRAWINGSTATE) {
         e.preventDefault();
-        this.#state = _DEFAULTSTATE;
+        this.#changeState(_DEFAULTSTATE);
         this.#StateBtnEnabled();
         document.getElementById(this.#focus).remove();
         this.#prevState.pop();
@@ -650,7 +672,7 @@ export default class ImageMemo {
         const canvasEl = document.getElementById(this.#rootId + "_canvas");
         canvasEl.appendChild(memo);
 
-        this.#state = _DEFAULTSTATE;
+        this.#changeState(_DEFAULTSTATE);
         this.#StateBtnEnabled();
       } else if (this.#state === _LINESTATE) {
         const path = this.#createPath(e, {});
@@ -662,8 +684,8 @@ export default class ImageMemo {
         const canvasEl = document.getElementById(this.#rootId + "_paint");
         canvasEl.appendChild(path);
 
-        this.#state = _DRAWINGSTATE;
-        // this.#changeFocus(path);
+        this.#changeState(_DRAWINGSTATE);
+        this.#changeFocus(path);
         // this.#paths.push(path);
       } else if (this.#state === _DRAWINGSTATE) {
         const focus = this.#focus;
@@ -677,8 +699,8 @@ export default class ImageMemo {
         const canvasEl = document.getElementById(this.#rootId + "_paint");
         canvasEl.appendChild(path);
 
-        this.#state = _DRAWINGSTATE;
-        // this.#changeFocus(path);
+        this.#changeState(_DRAWINGSTATE);
+        this.#changeFocus(path);
         // this.#paths.push(path);
       }
     });
@@ -689,7 +711,6 @@ export default class ImageMemo {
         // appendToBuffer();
         // getMousePosition(e, this.#rootId + "_paint");
 
-        console.log("Moving mouse:", { focus, e });
         const { x, y } = updateSvgPath(e, this.#rootId + "_paint", focus);
       }
     });
