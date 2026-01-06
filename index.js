@@ -371,6 +371,7 @@ export default class ImageMemo {
             width,
             height,
             borderColor,
+            textAlign,
           },
           offsetLeft,
           offsetTop,
@@ -392,6 +393,7 @@ export default class ImageMemo {
           // height,
           borderColor,
           innerText,
+          textAlign,
           // top,
           // left,
         };
@@ -456,18 +458,69 @@ export default class ImageMemo {
           // top,
           // left,
           innerText,
+          textAlign,
         } = memo;
 
         ctx.strokeStyle = borderColor;
         ctx.lineWidth = 4;
         ctx.strokeRect(offsetLeft, offsetTop, offsetWidth, offsetHeight);
 
-        // window.getComputedStyle(document.getElementById("root_memo_1ldj5g9")).getPropertyValue('font-family');
+        const fontFamily = window
+          .getComputedStyle(document.getElementById(id))
+          .getPropertyValue("font-family");
         ctx.fillStyle = color;
-        ctx.font = fontSize;
-        console.log(fontSize, ctx);
-        ctx.fillText(innerText, offsetLeft, offsetTop);
+        ctx.font = `${fontSize + " " + fontFamily}`;
+        ctx.textAlign = textAlign;
+        console.log(ctx, fontFamily, fontSize + " " + fontFamily);
+
+        let lineCounts = innerText.split("\n").length;
+
+        const baseVertical = offsetLeft + offsetWidth / 2;
+        const basehorizontal = offsetTop + offsetHeight / 2;
+
+        ctx.fillText(innerText, offsetLeft + offsetWidth / 2, offsetTop + 15);
+
+        ctx.beginPath();
+        ctx.strokeStyle = "blue";
+        ctx.moveTo(offsetLeft + offsetWidth / 2, offsetTop + 2);
+        ctx.lineTo(offsetLeft + offsetWidth / 2, offsetTop + offsetHeight - 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = "green";
+        ctx.moveTo(offsetLeft + 2, offsetTop + offsetHeight / 2);
+        ctx.lineTo(offsetLeft + offsetWidth - 2, offsetTop + offsetHeight / 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = "red";
+        ctx.moveTo(offsetLeft + 2, offsetTop + 4);
+        ctx.lineTo(offsetLeft + offsetWidth - 2, offsetTop + 4);
+        ctx.stroke();
       });
+
+      lines.forEach((line) => {
+        const { id, fill, stroke, strokeWidth, startX, startY, endX, endY, d } =
+          line;
+
+        ctx.beginPath();
+        ctx.lineWidth = strokeWidth;
+        ctx.strokeStyle = stroke;
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+      });
+
+      // const canvasUrl = canvasResult.toDataURL("image/png");
+
+      // const createEl = document.createElement("a");
+      // createEl.href = canvasUrl;
+
+      // createEl.download = "my-canvas-image";
+
+      // createEl.click();
+
+      // createEl.remove();
     });
 
     const addTextAreaBtnEl = document.createElement("button");

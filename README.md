@@ -19,3 +19,4 @@ image 에 메모(article) 기능 넣어보기
 - [ ] 이미지 로드전 버튼 막기
 - [ ] 박스 색상, 크기, 글씨 색상, 크기(select)
 - [ ] 라인 색상
+- [ ] html-to-image(2), snapDOM(3), html2canvas(1) 사용 할지 테스트
