@@ -273,11 +273,13 @@ export default class ImageMemo {
 
     if (e.code === "KeyL") {
       console.log("라인 그리기");
+      if (this.#focus !== null) return;
       const addLineBtnEl = document.getElementById(this.#rootId + "_line_btn");
       addLineBtnEl.click();
     }
     if (e.code === "KeyT") {
       console.log("TextArea 그리기");
+      if (this.#focus !== null) return;
       const addTextAreaBtnEl = document.getElementById(
         this.#rootId + "_textArea_btn"
       );
