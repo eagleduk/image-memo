@@ -1,6 +1,11 @@
-import ImageMemo from "./index.js";
+import ImageMemo from "./src/index.js";
 
-const memo = new ImageMemo("root");
 // memo.setData({ MEMOS, PATHS });
 
 // window.memo = memo;
+
+// export default function (id) {
+//   return new ImageMemo(id);
+// }
+
+new ImageMemo("root");

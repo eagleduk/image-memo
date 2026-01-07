@@ -1,4 +1,5 @@
-import { getMousePosition, updateSvgPath } from "./position.js";
+import { getMousePosition, updateSvgPath } from "../position.js";
+import html2canvas from "html2canvas";
 
 // 시작전(이미지 로드 전), 이미지 로드 후, 텍스트 박스 찍기, 텍스트 입력 중, 라인 그리기 시작, 라인 그리는 중
 const _READYSTATE = null;
@@ -12,7 +13,7 @@ const _DRAWINGSTATE = 21;
 const _CREATE = 1;
 const _DELETE = -1;
 
-export default class ImageMemo {
+class ImageMemo {
   // 기본 option
   #rootId;
   #options;
@@ -297,7 +298,7 @@ export default class ImageMemo {
 
     root.appendChild(toolbar);
     root.appendChild(content);
-    root.appendChild(result);
+    // root.appendChild(result);
 
     root.addEventListener("keyup", (e) => {
       console.log("keyup", e);
@@ -429,87 +430,87 @@ export default class ImageMemo {
 
       const image = document.getElementById(this.#rootId + "_image");
 
-      const canvasResult = document.getElementById(
-        this.#rootId + "_canvas_result"
-      );
+      // const canvasResult = document.getElementById(
+      //   this.#rootId + "_canvas_result"
+      // );
 
-      canvasResult.setAttribute("width", image.clientWidth);
-      canvasResult.setAttribute("height", image.clientHeight);
-      canvasResult.style.width = image.clientWidth + "px";
-      canvasResult.style.height = image.clientHeight + "px";
-      const ctx = canvasResult.getContext("2d");
+      // canvasResult.setAttribute("width", image.clientWidth);
+      // canvasResult.setAttribute("height", image.clientHeight);
+      // canvasResult.style.width = image.clientWidth + "px";
+      // canvasResult.style.height = image.clientHeight + "px";
+      // const ctx = canvasResult.getContext("2d");
 
-      ctx.drawImage(image, 0, 0, image.clientWidth, image.clientHeight);
+      // ctx.drawImage(image, 0, 0, image.clientWidth, image.clientHeight);
 
-      memos.forEach((memo) => {
-        const {
-          innerHTML,
-          offsetLeft,
-          offsetTop,
-          offsetWidth,
-          offsetHeight,
-          backgroundColor,
-          color,
-          id,
-          fontSize,
-          // width,
-          // height,
-          borderColor,
-          // top,
-          // left,
-          innerText,
-          textAlign,
-        } = memo;
+      // memos.forEach((memo) => {
+      //   const {
+      //     innerHTML,
+      //     offsetLeft,
+      //     offsetTop,
+      //     offsetWidth,
+      //     offsetHeight,
+      //     backgroundColor,
+      //     color,
+      //     id,
+      //     fontSize,
+      //     // width,
+      //     // height,
+      //     borderColor,
+      //     // top,
+      //     // left,
+      //     innerText,
+      //     textAlign,
+      //   } = memo;
 
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(offsetLeft, offsetTop, offsetWidth, offsetHeight);
+      //   ctx.strokeStyle = borderColor;
+      //   ctx.lineWidth = 4;
+      //   ctx.strokeRect(offsetLeft, offsetTop, offsetWidth, offsetHeight);
 
-        const fontFamily = window
-          .getComputedStyle(document.getElementById(id))
-          .getPropertyValue("font-family");
-        ctx.fillStyle = color;
-        ctx.font = `${fontSize + " " + fontFamily}`;
-        ctx.textAlign = textAlign;
-        console.log(ctx, fontFamily, fontSize + " " + fontFamily);
+      //   const fontFamily = window
+      //     .getComputedStyle(document.getElementById(id))
+      //     .getPropertyValue("font-family");
+      //   ctx.fillStyle = color;
+      //   ctx.font = `${fontSize + " " + fontFamily}`;
+      //   ctx.textAlign = textAlign;
+      //   console.log(ctx, fontFamily, fontSize + " " + fontFamily);
 
-        let lineCounts = innerText.split("\n").length;
+      //   let lineCounts = innerText.split("\n").length;
 
-        const baseVertical = offsetLeft + offsetWidth / 2;
-        const basehorizontal = offsetTop + offsetHeight / 2;
+      //   const baseVertical = offsetLeft + offsetWidth / 2;
+      //   const basehorizontal = offsetTop + offsetHeight / 2;
 
-        ctx.fillText(innerText, offsetLeft + offsetWidth / 2, offsetTop + 15);
+      //   ctx.fillText(innerText, offsetLeft + offsetWidth / 2, offsetTop + 15);
 
-        ctx.beginPath();
-        ctx.strokeStyle = "blue";
-        ctx.moveTo(offsetLeft + offsetWidth / 2, offsetTop + 2);
-        ctx.lineTo(offsetLeft + offsetWidth / 2, offsetTop + offsetHeight - 2);
-        ctx.stroke();
+      //   ctx.beginPath();
+      //   ctx.strokeStyle = "blue";
+      //   ctx.moveTo(offsetLeft + offsetWidth / 2, offsetTop + 2);
+      //   ctx.lineTo(offsetLeft + offsetWidth / 2, offsetTop + offsetHeight - 2);
+      //   ctx.stroke();
 
-        ctx.beginPath();
-        ctx.strokeStyle = "green";
-        ctx.moveTo(offsetLeft + 2, offsetTop + offsetHeight / 2);
-        ctx.lineTo(offsetLeft + offsetWidth - 2, offsetTop + offsetHeight / 2);
-        ctx.stroke();
+      //   ctx.beginPath();
+      //   ctx.strokeStyle = "green";
+      //   ctx.moveTo(offsetLeft + 2, offsetTop + offsetHeight / 2);
+      //   ctx.lineTo(offsetLeft + offsetWidth - 2, offsetTop + offsetHeight / 2);
+      //   ctx.stroke();
 
-        ctx.beginPath();
-        ctx.strokeStyle = "red";
-        ctx.moveTo(offsetLeft + 2, offsetTop + 4);
-        ctx.lineTo(offsetLeft + offsetWidth - 2, offsetTop + 4);
-        ctx.stroke();
-      });
+      //   ctx.beginPath();
+      //   ctx.strokeStyle = "red";
+      //   ctx.moveTo(offsetLeft + 2, offsetTop + 4);
+      //   ctx.lineTo(offsetLeft + offsetWidth - 2, offsetTop + 4);
+      //   ctx.stroke();
+      // });
 
-      lines.forEach((line) => {
-        const { id, fill, stroke, strokeWidth, startX, startY, endX, endY, d } =
-          line;
+      // lines.forEach((line) => {
+      //   const { id, fill, stroke, strokeWidth, startX, startY, endX, endY, d } =
+      //     line;
 
-        ctx.beginPath();
-        ctx.lineWidth = strokeWidth;
-        ctx.strokeStyle = stroke;
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-      });
+      //   ctx.beginPath();
+      //   ctx.lineWidth = strokeWidth;
+      //   ctx.strokeStyle = stroke;
+      //   ctx.moveTo(startX, startY);
+      //   ctx.lineTo(endX, endY);
+      //   ctx.stroke();
+      // });
 
       // const canvasUrl = canvasResult.toDataURL("image/png");
 
@@ -521,6 +522,12 @@ export default class ImageMemo {
       // createEl.click();
 
       // createEl.remove();
+
+      const root_canvas = document.getElementById(this.#rootId + "_canvas");
+      html2canvas(root_canvas).then((canvas) => {
+        console.log(canvas);
+        document.body.appendChild(canvas);
+      });
     });
 
     const addTextAreaBtnEl = document.createElement("button");
@@ -887,3 +894,5 @@ export default class ImageMemo {
     }
   }
 }
+
+export default ImageMemo;
