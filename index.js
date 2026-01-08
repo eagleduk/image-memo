@@ -117,18 +117,20 @@ export default class ImageMemo {
   }
 
   setData(data) {
+    console.log("set data: ", data);
     this.#data = data;
   }
 
   add(data) {
+    console.log("add data: ", data);
     if (!data) return;
     const { MEMOS: memos, PATHS: paths } = data;
     console.log(memos, paths);
 
     memos.forEach((m) => {
       const memo = this.#createMemo(m.innerHTML, {
-        x: m.left,
-        y: m.top,
+        x: m.offsetLeft,
+        y: m.offsetTop,
       });
       const canvasEl = document.getElementById(this.#rootId + "_canvas");
       canvasEl.appendChild(memo);
@@ -338,7 +340,7 @@ export default class ImageMemo {
       this.#changeFocus(null);
       this.#changeState(_READYSTATE);
 
-      this.#data = null;
+      // this.#data = null;
 
       this.#prevState = [];
       this.#nextState = [];
@@ -769,6 +771,7 @@ export default class ImageMemo {
       paint.setAttribute("width", image.clientWidth);
       paint.setAttribute("height", image.clientHeight);
 
+      console.log("data: ", this.#data);
       this.add(this.#data);
       this.#changeState(_DEFAULTSTATE);
     });
